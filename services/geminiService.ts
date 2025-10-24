@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, Type } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { FormData, ShoppingList } from "../types";
 
 // ✅ Vercel + Vite 環境対応：import.meta.env でAPIキーを取得
