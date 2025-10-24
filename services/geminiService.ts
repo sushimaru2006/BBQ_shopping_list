@@ -1,8 +1,14 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, Type } from "@google/generative-ai";
 import { FormData, ShoppingList } from "../types";
 
-// FIX: Initialize GoogleGenAI with API key from environment variables.
-const ai = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
+// ✅ Vercel + Vite 環境対応：import.meta.env でAPIキーを取得
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!API_KEY) {
+  console.error("❌ Gemini APIキーが設定されていません。Vercelの環境変数または.envを確認してください。");
+}
+
+const ai = new GoogleGenerativeAI(API_KEY);
 
 const shoppingListSchema = {
   type: Type.ARRAY,
