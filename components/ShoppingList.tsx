@@ -12,6 +12,8 @@ interface ShoppingListProps {
 
 const ShoppingList: React.FC<ShoppingListProps> = ({ shoppingList, onRegenerate, onReset, isLoading }) => {
   console.log("shoppingList data:", shoppingList);
+  console.log("🧩 shoppingList data:", shoppingList);
+
 
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
