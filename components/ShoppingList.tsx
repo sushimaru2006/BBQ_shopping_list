@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ShoppingList as ShoppingListType } from '../types';
 import { Check, Copy, RotateCcw, UtensilsCrossed } from './icons';
 
+
 interface ShoppingListProps {
   shoppingList: ShoppingListType;
   onRegenerate: () => void;
@@ -10,9 +11,11 @@ interface ShoppingListProps {
 }
 
 const ShoppingList: React.FC<ShoppingListProps> = ({ shoppingList, onRegenerate, onReset, isLoading }) => {
+  console.log("shoppingList data:", shoppingList);
+
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
-  
+
   const handleToggleItem = (categoryName: string, itemName: string) => {
     const itemId = `${categoryName}-${itemName}`;
     setCheckedItems(prev => {
@@ -25,7 +28,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ shoppingList, onRegenerate,
       return newSet;
     });
   };
-  
+
   const totalPrice = useMemo(() => {
     return shoppingList.reduce((total, category) => {
         return total + category.items.reduce((categoryTotal, item) => {
@@ -37,7 +40,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ shoppingList, onRegenerate,
   const listToPlainText = () => {
     let text = `【BBQ買い出しリスト】\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
 
-    text += shoppingList.map(cat => 
+    text += shoppingList.map(cat =>
       `▼ ${cat.category}\n` +
       cat.items.map(item => {
         let line = `- ${item.name} (${item.quantity})`;
