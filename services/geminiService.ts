@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { FormData, ShoppingList } from "../types";
 
 // FIX: Initialize GoogleGenAI with API key from environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const shoppingListSchema = {
   type: Type.ARRAY,
