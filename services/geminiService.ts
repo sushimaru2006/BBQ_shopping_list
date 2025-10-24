@@ -86,27 +86,19 @@ function buildPrompt(formData: FormData): string {
 export const generateShoppingList = async (formData: FormData): Promise<ShoppingList> => {
   const prompt = buildPrompt(formData);
   try {
-    // FIX: Use ai.models.generateContent instead of deprecated methods.
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: shoppingListSchema,
-      },
-    });
+    // ✅ モデル取得
+    const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    // FIX: Use response.text to get the text response directly.
-    const jsonStr = response.text.trim();
+    // ✅ コンテンツ生成
+    const result = await model.generateContent(prompt);
 
-    if (!jsonStr) {
-      throw new Error("APIから空の応答が返されました。");
-    }
+    // ✅ レスポンス取得
+    const text = result.response.text();
+    const shoppingList: ShoppingList = JSON.parse(text);
 
-    const shoppingList: ShoppingList = JSON.parse(jsonStr);
     return shoppingList;
   } catch (error) {
     console.error("Error generating shopping list:", error);
-    throw new Error("買い出しリストの生成中にエラーが発生しました。条件を変更して再度お試しください。");
+    throw new Error("買い出しリストの生成中にエラーが発生しました。");
   }
 };
