@@ -86,14 +86,16 @@ function buildPrompt(formData: FormData): string {
 export const generateShoppingList = async (formData: FormData): Promise<ShoppingList> => {
   const prompt = buildPrompt(formData);
   try {
-    // ✅ モデル取得
     const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    // ✅ コンテンツ生成
     const result = await model.generateContent(prompt);
 
-    // ✅ レスポンス取得
-    const text = result.response.text();
+    // テキストを取得
+    let text = result.response.text();
+
+    // ✅ 1. マークダウンコードブロックを除去
+    text = text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+
+    // ✅ 2. JSONとしてパース
     const shoppingList: ShoppingList = JSON.parse(text);
 
     return shoppingList;
