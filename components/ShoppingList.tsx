@@ -32,12 +32,23 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ shoppingList, onRegenerate,
   };
 
   const totalPrice = useMemo(() => {
-    return shoppingList.reduce((total, category) => {
-        return total + category.items.reduce((categoryTotal, item) => {
-            return categoryTotal + (item.price || 0);
-        }, 0);
-    }, 0);
-  }, [shoppingList]);
+  if (!shoppingList) return 0; // null安全チェック
+
+  // shoppingList がオブジェクト形式の場合でも安全
+  const categories = Array.isArray(shoppingList)
+    ? shoppingList
+    : Object.values(shoppingList);
+
+  return categories.reduce((total, category: any) => {
+    const items = Array.isArray(category.items)
+      ? category.items
+      : Object.values(category); // itemsがネストしていない場合にも対応
+    return (
+      total +
+      items.reduce((sum, item: any) => sum + (item.price || 0), 0)
+    );
+  }, 0);
+}, [shoppingList]);
 
   const listToPlainText = () => {
     let text = `【BBQ買い出しリスト】\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
