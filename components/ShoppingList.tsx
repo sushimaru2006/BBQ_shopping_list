@@ -31,15 +31,31 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }));
   console.log("normalizedList:", normalizedList);
 
+  // 🟢 ここを追加！
+  const fixedList = normalizedList.map((category) => {
+    const fixedItems = category.items.map((item) => {
+      if (Array.isArray(item)) {
+        const [name, quantity, price] = item;
+        return {
+          name: String(name ?? ""),
+          quantity: String(quantity ?? ""),
+          price: typeof price === "number" ? price : Number(price) || undefined,
+        };
+      }
+      return item;
+    });
+    return { ...category, items: fixedItems };
+  });
+
   // ✅ 合計金額計算
   const totalPrice = useMemo(() => {
-    return normalizedList.reduce((total, category) => {
+    return fixedList.reduce((total, category) => {
       return (
         total +
         category.items.reduce((sum, item) => sum + (item.price || 0), 0)
       );
     }, 0);
-  }, [normalizedList]);
+  }, [fixedList]);
 
   // ✅ チェックのON/OFF
   const handleToggleItem = (categoryName: string, itemName: string) => {
@@ -59,7 +75,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const listToPlainText = () => {
     let text = `【BBQ買い出しリスト】\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
 
-    text += normalizedList
+    text += fixedList
       .map(
         (cat) =>
           `▼ ${cat.category}\n` +
@@ -134,7 +150,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       {/* List Section */}
       <div className="space-y-6">
-        {normalizedList.map((category) => (
+        {fixedList.map((category) => (
           <div
             key={category.category}
             className="border border-gray-200 rounded-lg overflow-hidden"
