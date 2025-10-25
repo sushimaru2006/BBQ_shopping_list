@@ -20,13 +20,16 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
-  // ✅ 配列でもオブジェクトでも安全に扱う
+  // ✅ 配列でもオブジェクトでも安全に扱う（中身も含めて）
   const normalizedList: ShoppingListCategory[] = Array.isArray(shoppingList)
     ? shoppingList
     : Object.entries(shoppingList || {}).map(([category, items]) => ({
         category,
-        items: Array.isArray(items) ? items : [],
+        items: Array.isArray(items)
+          ? items
+          : Object.values(items || {}), // ←★★ ここを追加！
       }));
+  console.log("normalizedList:", normalizedList);
 
   // ✅ 合計金額計算
   const totalPrice = useMemo(() => {
