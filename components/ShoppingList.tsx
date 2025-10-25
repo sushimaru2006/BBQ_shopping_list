@@ -1,9 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingList as ShoppingListType, ShoppingListCategory } from '../types';
-import { Check, Copy, RotateCcw, UtensilsCrossed } from './icons';
+import { Check, Copy, RotateCcw, UtensilsCrossed } from 'lucide-react';
+
+interface ShoppingItem {
+  name: string;
+  quantity: string;
+  price?: number;
+  notes?: string;
+}
+
+interface ShoppingListCategory {
+  category: string;
+  items: ShoppingItem[];
+}
 
 interface ShoppingListProps {
-  shoppingList: ShoppingListType | Record<string, any>; // オブジェクト型も許容
+  shoppingList: ShoppingListCategory[] | Record<string, any>;
   onRegenerate: () => void;
   onReset: () => void;
   isLoading: boolean;
@@ -20,41 +31,68 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
-  const normalizedList: ShoppingListCategory[] = Array.isArray(shoppingList)
-    ? shoppingList
-    : Object.entries(shoppingList || {}).map(([category, items]) => ({
-        category,
-        items: Array.isArray(items) ? items : Object.values(items || {}),
-      }));
+  // データの正規化
+  const normalizedList: ShoppingListCategory[] = useMemo(() => {
+    if (Array.isArray(shoppingList)) {
+      return shoppingList;
+    }
 
-  const fixedList = normalizedList.map((category) => {
-    const fixedItems = category.items.map((item: any) => {
-      if (Array.isArray(item)) {
-        const [name, quantity, price] = item;
+    // オブジェクト形式の場合
+    return Object.entries(shoppingList || {}).map(([category, items]) => ({
+      category,
+      items: Array.isArray(items) ? items : Object.values(items || {}),
+    }));
+  }, [shoppingList]);
+
+  // アイテムデータの修正
+  const fixedList: ShoppingListCategory[] = useMemo(() => {
+    return normalizedList.map((category) => {
+      const fixedItems = category.items.map((item: any, index: number) => {
+        // 配列形式の場合
+        if (Array.isArray(item)) {
+          const [name = '', quantity = '', price, notes] = item;
+          return {
+            name: String(name),
+            quantity: String(quantity),
+            price: typeof price === 'number' ? price : (price ? Number(price) : undefined),
+            notes: notes ? String(notes) : undefined,
+          };
+        }
+
+        // オブジェクト形式の場合
+        if (typeof item === 'object' && item !== null) {
+          return {
+            name: String(item.name || item.item || `アイテム${index + 1}`),
+            quantity: String(item.quantity || item.amount || '適量'),
+            price: typeof item.price === 'number' ? item.price : (item.price ? Number(item.price) : undefined),
+            notes: item.notes ? String(item.notes) : undefined,
+          };
+        }
+
+        // その他の場合（文字列など）
         return {
-          name: String(name ?? ''),
-          quantity: String(quantity ?? ''),
-          price: typeof price === 'number' ? price : Number(price) || undefined,
+          name: String(item),
+          quantity: '適量',
         };
-      }
-      return item;
-    });
-    return { ...category, items: fixedItems };
-  });
+      });
 
-  // 合計金額の計算も fixedList を使う
+      return { ...category, items: fixedItems };
+    });
+  }, [normalizedList]);
+
+  // 合計金額の計算
   const totalPrice = useMemo(() => {
     return fixedList.reduce(
       (total, category) =>
         total +
-        category.items.reduce((sum: number, item: any) => sum + (item.price || 0), 0),
+        category.items.reduce((sum, item) => sum + (item.price || 0), 0),
       0
     );
-}, [fixedList]);
+  }, [fixedList]);
 
-  // ✅ チェックのON/OFF
-  const handleToggleItem = (categoryName: string, itemName: string) => {
-    const itemId = `${categoryName}-${itemName}`;
+  // チェックのON/OFF（ユニークなIDを生成）
+  const handleToggleItem = (categoryIndex: number, itemIndex: number) => {
+    const itemId = `cat-${categoryIndex}-item-${itemIndex}`;
     setCheckedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -66,7 +104,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     });
   };
 
-  // ✅ テキストコピー用
+  // テキストコピー用
   const listToPlainText = () => {
     let text = `【BBQ買い出しリスト】\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
 
@@ -99,7 +137,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 w-full animate-fade-in">
+    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div className="mb-4 sm:mb-0">
@@ -111,7 +149,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
             <div className="mt-2 pl-11">
               <span className="font-semibold text-gray-600">予想合計金額:</span>
               <span className="ml-2 text-2xl font-bold text-orange-600">
-                &yen;{totalPrice.toLocaleString()}
+                ¥{totalPrice.toLocaleString()}
               </span>
             </div>
           )}
@@ -145,24 +183,22 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       {/* List Section */}
       <div className="space-y-6">
-        {fixedList.map((category) => (
+        {fixedList.map((category, categoryIndex) => (
           <div
-            key={category.category}
+            key={`category-${categoryIndex}`}
             className="border border-gray-200 rounded-lg overflow-hidden"
           >
             <h3 className="bg-orange-50 text-orange-800 px-4 py-3 font-semibold text-lg border-b border-orange-200">
               {category.category}
             </h3>
             <ul className="divide-y divide-gray-200">
-              {category.items.map((item) => {
-                const itemId = `${category.category}-${item.name}`;
+              {category.items.map((item, itemIndex) => {
+                const itemId = `cat-${categoryIndex}-item-${itemIndex}`;
                 const isChecked = checkedItems.has(itemId);
                 return (
                   <li
                     key={itemId}
-                    onClick={() =>
-                      handleToggleItem(category.category, item.name)
-                    }
+                    onClick={() => handleToggleItem(categoryIndex, itemIndex)}
                     className={`flex items-start p-4 cursor-pointer transition-colors ${
                       isChecked
                         ? 'bg-green-50 text-gray-500'
