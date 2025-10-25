@@ -20,26 +20,21 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
-  // ✅ 配列でもオブジェクトでも安全に扱う（中身も含めて）
   const normalizedList: ShoppingListCategory[] = Array.isArray(shoppingList)
     ? shoppingList
     : Object.entries(shoppingList || {}).map(([category, items]) => ({
         category,
-        items: Array.isArray(items)
-          ? items
-          : Object.values(items || {}), // ←★★ ここを追加！
+        items: Array.isArray(items) ? items : Object.values(items || {}),
       }));
-  console.log("normalizedList:", normalizedList);
 
-  // 🟢 ここを追加！
   const fixedList = normalizedList.map((category) => {
-    const fixedItems = category.items.map((item) => {
+    const fixedItems = category.items.map((item: any) => {
       if (Array.isArray(item)) {
         const [name, quantity, price] = item;
         return {
-          name: String(name ?? ""),
-          quantity: String(quantity ?? ""),
-          price: typeof price === "number" ? price : Number(price) || undefined,
+          name: String(name ?? ''),
+          quantity: String(quantity ?? ''),
+          price: typeof price === 'number' ? price : Number(price) || undefined,
         };
       }
       return item;
@@ -47,15 +42,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return { ...category, items: fixedItems };
   });
 
-  // ✅ 合計金額計算
+  // 合計金額の計算も fixedList を使う
   const totalPrice = useMemo(() => {
-    return fixedList.reduce((total, category) => {
-      return (
+    return fixedList.reduce(
+      (total, category) =>
         total +
-        category.items.reduce((sum, item) => sum + (item.price || 0), 0)
-      );
-    }, 0);
-  }, [fixedList]);
+        category.items.reduce((sum: number, item: any) => sum + (item.price || 0), 0),
+      0
+    );
+}, [fixedList]);
 
   // ✅ チェックのON/OFF
   const handleToggleItem = (categoryName: string, itemName: string) => {
