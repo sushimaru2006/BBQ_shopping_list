@@ -1,9 +1,8 @@
-import { Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { FormData, ShoppingList } from "../types";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const ai = new GoogleGenerativeAI(apiKey);
+// FIX: Initialize GoogleGenAI with API key from environment variables.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const shoppingListSchema = {
   type: Type.ARRAY,
@@ -86,21 +85,27 @@ function buildPrompt(formData: FormData): string {
 export const generateShoppingList = async (formData: FormData): Promise<ShoppingList> => {
   const prompt = buildPrompt(formData);
   try {
-    const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent(prompt);
+    // FIX: Use ai.models.generateContent instead of deprecated methods.
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: shoppingListSchema,
+      },
+    });
 
-    // テキストを取得
-    let text = result.response.text();
+    // FIX: Use response.text to get the text response directly.
+    const jsonStr = response.text.trim();
 
-    // ✅ 1. マークダウンコードブロックを除去
-    text = text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+    if (!jsonStr) {
+      throw new Error("APIから空の応答が返されました。");
+    }
 
-    // ✅ 2. JSONとしてパース
-    const shoppingList: ShoppingList = JSON.parse(text);
-
+    const shoppingList: ShoppingList = JSON.parse(jsonStr);
     return shoppingList;
   } catch (error) {
     console.error("Error generating shopping list:", error);
-    throw new Error("買い出しリストの生成中にエラーが発生しました。");
+    throw new Error("買い出しリストの生成中にエラーが発生しました。条件を変更して再度お試しください。");
   }
 };

@@ -3,7 +3,7 @@ import { ShoppingList as ShoppingListType, ShoppingListCategory } from '../types
 import { Check, Copy, RotateCcw, UtensilsCrossed } from './icons';
 
 interface ShoppingListProps {
-  shoppingList: ShoppingListType | Record<string, any>; // オブジェクト型も許容
+  shoppingList: ShoppingListType | Record<string, any>;
   onRegenerate: () => void;
   onReset: () => void;
   isLoading: boolean;
@@ -20,26 +20,23 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
-  // ✅ 配列でもオブジェクトでも安全に扱う（中身も含めて）
   const normalizedList: ShoppingListCategory[] = Array.isArray(shoppingList)
     ? shoppingList
     : Object.entries(shoppingList || {}).map(([category, items]) => ({
         category,
         items: Array.isArray(items)
           ? items
-          : Object.values(items || {}), // ←★★ ここを追加！
+          : Object.values(items || {}),
       }));
-  console.log("normalizedList:", normalizedList);
 
-  // 🟢 ここを追加！
   const fixedList = normalizedList.map((category) => {
-    const fixedItems = category.items.map((item) => {
+    const fixedItems = category.items.map((item: any) => {
       if (Array.isArray(item)) {
         const [name, quantity, price] = item;
         return {
-          name: String(name ?? ""),
-          quantity: String(quantity ?? ""),
-          price: typeof price === "number" ? price : Number(price) || undefined,
+          name: String(name ?? ''),
+          quantity: String(quantity ?? ''),
+          price: typeof price === 'number' ? price : Number(price) || undefined,
         };
       }
       return item;
@@ -47,17 +44,15 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     return { ...category, items: fixedItems };
   });
 
-  // ✅ 合計金額計算
   const totalPrice = useMemo(() => {
-    return fixedList.reduce((total, category) => {
-      return (
+    return fixedList.reduce(
+      (total, category) =>
         total +
-        category.items.reduce((sum, item) => sum + (item.price || 0), 0)
-      );
-    }, 0);
+        category.items.reduce((sum: number, item: any) => sum + (item.price || 0), 0),
+      0
+    );
   }, [fixedList]);
 
-  // ✅ チェックのON/OFF
   const handleToggleItem = (categoryName: string, itemName: string) => {
     const itemId = `${categoryName}-${itemName}`;
     setCheckedItems((prev) => {
@@ -71,22 +66,21 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
     });
   };
 
-  // ✅ テキストコピー用
   const listToPlainText = () => {
-    let text = `【BBQ買い出しリスト】\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
+    let text = `\n予想合計金額: 約${totalPrice.toLocaleString()}円\n\n`;
 
     text += fixedList
       .map(
         (cat) =>
           `▼ ${cat.category}\n` +
           cat.items
-            .map((item) => {
+            .map((item: any) => {
               let line = `- ${item.name} (${item.quantity})`;
               if (item.price != null) {
                 line += ` [約${item.price.toLocaleString()}円]`;
               }
-              if (item.notes) {
-                line += ` (${item.notes})`;
+              if ((item as any).notes) {
+                line += ` (${(item as any).notes})`;
               }
               return line;
             })
@@ -105,7 +99,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 w-full animate-fade-in">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div className="mb-4 sm:mb-0">
           <div className="flex items-center">
@@ -148,7 +141,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         </div>
       </div>
 
-      {/* List Section */}
       <div className="space-y-6">
         {fixedList.map((category) => (
           <div
@@ -159,7 +151,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
               {category.category}
             </h3>
             <ul className="divide-y divide-gray-200">
-              {category.items.map((item) => {
+              {category.items.map((item: any) => {
                 const itemId = `${category.category}-${item.name}`;
                 const isChecked = checkedItems.has(itemId);
                 return (
@@ -203,13 +195,13 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
                           </span>
                         )}
                       </div>
-                      {item.notes && (
+                      {(item as any).notes && (
                         <p
                           className={`text-xs text-gray-500 italic mt-1 ${
                             isChecked ? 'line-through' : ''
                           }`}
                         >
-                          {item.notes}
+                          {(item as any).notes}
                         </p>
                       )}
                     </div>
@@ -221,7 +213,6 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
         ))}
       </div>
 
-      {/* Reset Button */}
       <div className="mt-8">
         <button
           onClick={onReset}
