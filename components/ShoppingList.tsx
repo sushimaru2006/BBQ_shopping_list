@@ -31,6 +31,25 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
       }));
   console.log("normalizedList:", normalizedList);
 
+  // ✅ items の中身をオブジェクト形式に変換
+  const fixedList = normalizedList.map((category) => {
+    const fixedItems = category.items.map((item) => {
+      // もし item が ["牛肉", "500g", 800] のような配列ならオブジェクトに変換
+      if (Array.isArray(item)) {
+        const [name, quantity, price] = item;
+        return {
+          name: String(name ?? ""),
+          quantity: String(quantity ?? ""),
+          price: typeof price === "number" ? price : Number(price) || undefined,
+        };
+      }
+      // すでにオブジェクト形式ならそのまま
+      return item;
+    });
+
+    return { ...category, items: fixedItems };
+  });
+
   // ✅ 合計金額計算
   const totalPrice = useMemo(() => {
     return normalizedList.reduce((total, category) => {
@@ -134,72 +153,17 @@ const ShoppingList: React.FC<ShoppingListProps> = ({
 
       {/* List Section */}
       <div className="space-y-6">
-        {normalizedList.map((category) => (
-          <div
-            key={category.category}
-            className="border border-gray-200 rounded-lg overflow-hidden"
-          >
-            <h3 className="bg-orange-50 text-orange-800 px-4 py-3 font-semibold text-lg border-b border-orange-200">
-              {category.category}
-            </h3>
-            <ul className="divide-y divide-gray-200">
-              {category.items.map((item) => {
-                const itemId = `${category.category}-${item.name}`;
-                const isChecked = checkedItems.has(itemId);
-                return (
-                  <li
-                    key={itemId}
-                    onClick={() =>
-                      handleToggleItem(category.category, item.name)
-                    }
-                    className={`flex items-start p-4 cursor-pointer transition-colors ${
-                      isChecked
-                        ? 'bg-green-50 text-gray-500'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-full border-2 flex-shrink-0 mr-4 mt-1 flex items-center justify-center ${
-                        isChecked
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {isChecked && <Check className="w-4 h-4 text-white" />}
-                    </div>
-                    <div className="flex-grow">
-                      <p
-                        className={`font-medium text-gray-800 ${
-                          isChecked ? 'line-through' : ''
-                        }`}
-                      >
-                        {item.name}
-                      </p>
-                      <div
-                        className={`text-sm text-gray-600 flex items-center ${
-                          isChecked ? 'line-through' : ''
-                        }`}
-                      >
-                        <span>{item.quantity}</span>
-                        {item.price != null && (
-                          <span className="ml-2 font-semibold text-gray-700">
-                            (約{item.price.toLocaleString()}円)
-                          </span>
-                        )}
-                      </div>
-                      {item.notes && (
-                        <p
-                          className={`text-xs text-gray-500 italic mt-1 ${
-                            isChecked ? 'line-through' : ''
-                          }`}
-                        >
-                          {item.notes}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
+        {fixedList.map((category) => (
+          <div key={category.category}>
+            <h3>{category.category}</h3>
+            <ul>
+              {category.items.map((item, i) => (
+                <li key={i}>
+                  <p>{item.name}</p>
+                  <p>{item.quantity}</p>
+                  {item.price && <p>約{item.price.toLocaleString()}円</p>}
+                </li>
+              ))}
             </ul>
           </div>
         ))}
